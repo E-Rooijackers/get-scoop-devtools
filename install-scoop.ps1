@@ -597,11 +597,13 @@ function Install-Scoop {
             if (-Not $?) {
                 throw 'Cloning failed. Falling back to downloading zip files.'
             }
+
             Write-Verbose "Cloning $SCOOP_MAIN_BUCKET_GIT_REPO to $SCOOP_MAIN_BUCKET_DIR"
             git clone -q $SCOOP_MAIN_BUCKET_GIT_REPO $SCOOP_MAIN_BUCKET_DIR
             if (-Not $?) {
                 throw 'Cloning failed. Falling back to downloading zip files.'
             }
+
             $downloadZipsRequired = $False
         } catch {
             Write-Warning "$($_.Exception.Message)"
@@ -646,15 +648,6 @@ function Install-Scoop {
         Remove-Item $scoopZipfile
         Remove-Item $scoopMainUnzipTempDir -Recurse -Force
         Remove-Item $scoopMainZipfile
-
-        $scoopCurrent = Join-Path $SCOOP_APP_DIR 'current'
-        if (Test-Path (Join-Path $scoopCurrent '.git')) {
-            Remove-Item (Join-Path $scoopCurrent '.git') -Recurse -Force
-        }
-
-        if (Test-Path (Join-Path $SCOOP_MAIN_BUCKET_DIR '.git')) {
-            Remove-Item (Join-Path $SCOOP_MAIN_BUCKET_DIR '.git') -Recurse -Force
-        }
     }
 
     # Create the scoop shim

@@ -646,7 +646,17 @@ function Install-Scoop {
         Remove-Item $scoopZipfile
         Remove-Item $scoopMainUnzipTempDir -Recurse -Force
         Remove-Item $scoopMainZipfile
+
+        $scoopCurrent = Join-Path $SCOOP_APP_DIR 'current'
+        if (Test-Path (Join-Path $scoopCurrent '.git')) {
+            Remove-Item (Join-Path $scoopCurrent '.git') -Recurse -Force
+        }
+
+        if (Test-Path (Join-Path $SCOOP_MAIN_BUCKET_DIR '.git')) {
+            Remove-Item (Join-Path $SCOOP_MAIN_BUCKET_DIR '.git') -Recurse -Force
+        }
     }
+
     # Create the scoop shim
     Import-ScoopShim
     # Finially ensure scoop shims is in the PATH

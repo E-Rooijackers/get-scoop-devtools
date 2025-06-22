@@ -604,6 +604,12 @@ function Install-Scoop {
                 throw 'Cloning failed. Falling back to downloading zip files.'
             }
 
+            Write-Verbose "Cloning $SCOOP_DEVTOOLS_BUCKET_GIT_REPO to $SCOOP_DEVTOOLS_BUCKET_DIR"
+            git clone -q $SCOOP_DEVTOOLS_BUCKET_GIT_REPO $SCOOP_DEVTOOLS_BUCKET_DIR
+            if (-Not $?) {
+                throw 'Cloning failed. Falling back to downloading zip files.'
+            }
+
             $downloadZipsRequired = $False
         } catch {
             Write-Warning "$($_.Exception.Message)"
@@ -629,6 +635,13 @@ function Install-Scoop {
         }
         Write-Verbose "Downloading $SCOOP_MAIN_BUCKET_REPO to $scoopMainZipfile"
         $downloader.downloadFile($SCOOP_MAIN_BUCKET_REPO, $scoopMainZipfile)
+        # 3. download scoop devtools bucket
+        $scoopDevToolsZipfile = "$SCOOP_DEVTOOLS_BUCKET_REPO\scoop-devtools.zip"
+        if (!(Test-Path $SCOOP_DEVTOOLS_BUCKET_DIR)) {
+            New-Item -Type Directory $SCOOP_DEVTOOLS_BUCKET_DIR | Out-Null
+        }
+        Write-Verbose "Downloading $SCOOP_DEVTOOLS_BUCKET_REPO to $scoopDevToolsZipfile"
+        $downloader.downloadFile($SCOOP_DEVTOOLS_BUCKET_REPO, $scoopDevToolsZipfile)
 
         # Extract files from downloaded zip
         Write-InstallInfo 'Extracting...'
@@ -642,12 +655,19 @@ function Install-Scoop {
         Write-Verbose "Extracting $scoopMainZipfile to $scoopMainUnzipTempDir"
         Expand-ZipArchive $scoopMainZipfile $scoopMainUnzipTempDir
         Copy-Item "$scoopMainUnzipTempDir\Main-*\*" $SCOOP_MAIN_BUCKET_DIR -Recurse -Force
+        # 3. extract scoop devtools bucket
+        $scoopDevToolsUnzipTempDir = "$SCOOP_DEVTOOLS_BUCKET_DIR\_tmp"
+        Write-Verbose "Extracting $scoopDevToolsZipfile to $scoopDevToolsUnzipTempDir"
+        Expand-ZipArchive $scoopMainZipfile $scoopDevToolsUnzipTempDir
+        Copy-Item "$scoopDevToolsUnzipTempDir\scoop-devtools-bucket-*\*" $SCOOP_DEVTOOLS_BUCKET_DIR -Recurse -Force
 
         # Cleanup
         Remove-Item $scoopUnzipTempDir -Recurse -Force
         Remove-Item $scoopZipfile
         Remove-Item $scoopMainUnzipTempDir -Recurse -Force
+        Remove-Item $scoopDevToolsUnzipTempDir -Recurse -Force
         Remove-Item $scoopMainZipfile
+        Remove-Item $scoopDevToolsZipfile
     }
 
     # Create the scoop shim
@@ -696,17 +716,21 @@ $SCOOP_SHIMS_DIR = "$SCOOP_DIR\shims"
 # Scoop itself directory
 $SCOOP_APP_DIR = "$SCOOP_DIR\apps\scoop\current"
 # Scoop main bucket directory
-$SCOOP_MAIN_BUCKET_DIR = "$SCOOP_DIR\buckets\Scoop-DevTools"
+$SCOOP_MAIN_BUCKET_DIR = "$SCOOP_DIR\buckets\main"
+# Scoop DevTools bucket directory
+$SCOOP_DEVTOOLS_BUCKET_DIR = "$SCOOP_DIR\buckets\Scoop-DevTools"
 # Scoop config file location
 $SCOOP_CONFIG_HOME = $env:XDG_CONFIG_HOME, "$env:USERPROFILE\.config" | Select-Object -First 1
 $SCOOP_CONFIG_FILE = "$SCOOP_CONFIG_HOME\scoop\config.json"
 
 # TODO: Use a specific version of Scoop and the main bucket
 $SCOOP_PACKAGE_REPO       = 'https://github.com/E-Rooijackers/Scoop-DevTools/archive/refs/tags/v1.0-devtools.zip'
-$SCOOP_MAIN_BUCKET_REPO   = 'https://github.com/E-Rooijackers/scoop-devtools-bucket/archive/refs/heads/main.zip'
+$SCOOP_MAIN_BUCKET_REPO = 'https://github.com/ScoopInstaller/Main/archive/master.zip'
+$SCOOP_DEVTOOLS_BUCKET_REPO   = 'https://github.com/E-Rooijackers/scoop-devtools-bucket/archive/refs/heads/main.zip'
 
 $SCOOP_PACKAGE_GIT_REPO   = 'https://github.com/E-Rooijackers/Scoop-DevTools.git'
-$SCOOP_MAIN_BUCKET_GIT_REPO = 'https://github.com/E-Rooijackers/scoop-devtools-bucket.git'
+$SCOOP_MAIN_BUCKET_GIT_REPO = 'https://github.com/ScoopInstaller/Main.git'
+$SCOOP_DEVTOOLS_BUCKET_GIT_REPO = 'https://github.com/E-Rooijackers/scoop-devtools-bucket.git'
 
 # Quit if anything goes wrong
 $oldErrorActionPreference = $ErrorActionPreference
@@ -715,6 +739,7 @@ $ErrorActionPreference = 'Stop'
 # Logging debug info
 Write-DebugInfo $PSBoundParameters
 # Bootstrap function
+Write-InstallInfo 'Scoop-DevTools installer v1.0'
 Install-Scoop
 
 # Reset $ErrorActionPreference to original value
